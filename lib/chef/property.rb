@@ -31,8 +31,7 @@ class Chef
     #     `nil` means the property is opaque and not tied to a specific instance
     #     variable.
     #   @option options [Boolean] :desired_state `true` if this property is part of desired
-    #     state. Defaults to `true`. If `identity` is true, `desired_state` will
-    #     also be true.
+    #     state. Defaults to `true`.
     #   @option options [Boolean] :identity `true` if this property is part of object
     #     identity. Defaults to `false`.
     #   @option options [Boolean] :name_property `true` if this
@@ -108,14 +107,11 @@ class Chef
     #
     # Defaults to true.
     #
-    # identity implies desired state: if identity? is true, desired_state? will
-    # be true as well.
-    #
     # @return [Boolean]
     #
     def desired_state?
       return true if !options.has_key?(:desired_state)
-      options[:desired_state] || identity?
+      options[:desired_state]
     end
 
     #
