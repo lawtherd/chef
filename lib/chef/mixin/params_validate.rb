@@ -81,8 +81,6 @@ class Chef
       #     properties).  (See #_pv_default.)
       #
       def validate(opts, map)
-        map = map.validation_options if map.is_a?(Property)
-
         #--
         # validate works by taking the keys in the validation map, assuming it's a hash, and
         # looking for _pv_:symbol as methods.  Assuming it find them, it calls the right

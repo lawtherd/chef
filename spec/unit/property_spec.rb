@@ -282,9 +282,9 @@ describe "Chef::Resource.property" do
         resource.x lazy { 10 }
         expect(resource.property_is_set?(:x)).to be_truthy
       end
-      it "when x is retrieved, property_is_set?(:x) is true" do
+      it "when x is retrieved, property_is_set?(:x) is false" do
         resource.x
-        expect(resource.property_is_set?(:x)).to be_truthy
+        expect(resource.property_is_set?(:x)).to be_falsey
       end
     end
 
@@ -304,9 +304,9 @@ describe "Chef::Resource.property" do
         resource.x lazy { 10 }
         expect(resource.property_is_set?(:x)).to be_truthy
       end
-      it "when x is retrieved, property_is_set?(:x) is true" do
+      it "when x is retrieved, property_is_set?(:x) is false" do
         resource.x
-        expect(resource.property_is_set?(:x)).to be_truthy
+        expect(resource.property_is_set?(:x)).to be_falsey
       end
     end
 
@@ -322,9 +322,9 @@ describe "Chef::Resource.property" do
         resource.x = 10
         expect(resource.property_is_set?(:x)).to be_truthy
       end
-      it "when x is retrieved, property_is_set?(:x) is true" do
+      it "when x is retrieved, property_is_set?(:x) is false" do
         resource.x
-        expect(resource.property_is_set?(:x)).to be_truthy
+        expect(resource.property_is_set?(:x)).to be_falsey
       end
     end
   end
@@ -482,11 +482,11 @@ describe "Chef::Resource.property" do
       end
 
       with_property ":x, default: lazy { Namer.next_index }, is: proc { |v| Namer.next_index; true }" do
-        it "validation is only run the first time" do
+        it "validation is run each time" do
           expect(resource.x).to eq 1
           expect(Namer.current_index).to eq 2
-          expect(resource.x).to eq 1
-          expect(Namer.current_index).to eq 2
+          expect(resource.x).to eq 3
+          expect(Namer.current_index).to eq 4
         end
       end
     end
@@ -504,8 +504,8 @@ describe "Chef::Resource.property" do
         end
         it "when x is retrieved, coercion is run, no more than once" do
           expect(resource.x).to eq '101'
-          expect(resource.x).to eq '101'
-          expect(Namer.current_index).to eq 1
+          expect(resource.x).to eq '102'
+          expect(Namer.current_index).to eq 2
         end
       end
 
@@ -522,12 +522,12 @@ describe "Chef::Resource.property" do
       end
 
       with_property ':x, proc { |v| Namer.next_index; true }, coerce: proc { |v| "#{v}#{next_index}" }, default: lazy { 10 }' do
-        it "coercion is only run the first time x is retrieved" do
+        it "coercion is run every time x is retrieved" do
           expect(Namer.current_index).to eq 0
           expect(resource.x).to eq '101'
           expect(Namer.current_index).to eq 2
-          expect(resource.x).to eq '101'
-          expect(Namer.current_index).to eq 2
+          expect(resource.x).to eq '103'
+          expect(Namer.current_index).to eq 4
         end
       end
 
@@ -553,12 +553,12 @@ describe "Chef::Resource.property" do
           end
         end
         with_property ':x, proc { |v| Namer.next_index; true }, coerce: proc { |v| "#{v}#{next_index}" }, default: lazy { 10 }' do
-          it "coercion and validation is only run the first time x is retrieved" do
+          it "coercion and validation is run every time x is retrieved" do
             expect(Namer.current_index).to eq 0
             expect(resource.x).to eq '101'
             expect(Namer.current_index).to eq 2
-            expect(resource.x).to eq '101'
-            expect(Namer.current_index).to eq 2
+            expect(resource.x).to eq '103'
+            expect(Namer.current_index).to eq 4
           end
         end
       end
@@ -790,10 +790,10 @@ describe "Chef::Resource.property" do
           resource.name 'foo'
           expect(resource.x).to eq 'foo'
         end
-        it "caches resource.name" do
+        it "grabs resource.name every time" do
           expect(resource.x).to eq 'blah'
           resource.name 'foo'
-          expect(resource.x).to eq 'blah'
+          expect(resource.x).to eq 'foo'
         end
       end
       with_property ":x, default: 10, #{name}: true" do

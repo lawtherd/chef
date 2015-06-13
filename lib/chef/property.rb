@@ -225,8 +225,7 @@ class Chef
 
       else
         raise Chef::Exceptions::ValidationFailed, "#{name} is required" if required?
-        set(resource, default(resource)) if has_default? || name_property?
-
+        default(resource)
       end
     end
 
@@ -251,7 +250,8 @@ class Chef
     end
 
     #
-    # Get the default value for this property.
+    # Get the default value for this property (the value that would be returned
+    # if the value was unset).
     #
     # - If the property has a default, the default value will be returned. If
     #   the default value is lazy, it will be evaluated, coerced, validated and
@@ -274,8 +274,21 @@ class Chef
     #   this property.
     #
     def default(resource=nil)
-      return delazify(resource, options[:default]) if options.has_key?(:default)
-      return coerce(resource, resource.name) if name_property? && resource && name != :name
+      # Handle default
+      if options.has_key?(:default)
+        value = options[:default]
+        if value.is_a?(DelayedEvaluator)
+          value = exec_in_resource(resource, value)
+        end
+        value = coerce(resource, value)
+        return value
+      end
+
+      # Handle name property
+      if name_property? && resource && name != :name
+        return coerce(resource, resource.name)
+      end
+
       nil
     end
 
@@ -413,11 +426,6 @@ class Chef
       else
         true
       end
-    end
-
-    def delazify(resource, value, *args)
-      return value if !value.is_a?(DelayedEvaluator)
-      exec_in_resource(resource, value, *args)
     end
 
     def exec_in_resource(resource, proc, *args)
