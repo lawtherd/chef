@@ -318,6 +318,16 @@ class Chef
     end
 
     #
+    # Reset the value of this property so that is_set? will return false and the
+    # default will be returned in the future.
+    #
+    # @param resource [Chef::Resource] The resource to get the property from.
+    #
+    def reset(resource)
+      reset_value(resource)
+    end
+
+    #
     # Coerce an input value into canonical form for the property, validating
     # it in the process.
     #
@@ -446,6 +456,16 @@ class Chef
       end
     end
 
+    def reset_value(resource)
+      if instance_variable_name
+        if value_is_set?(resource)
+          resource.send(:remove_instance_variable, instance_variable_name)
+        end
+      else
+        raise ArgumentError, "Property #{name} has no instance variable defined and cannot be reset"
+      end
+    end
+
     def exec_in_resource(resource, proc, *args)
       if resource
         if proc.arity > args.size
@@ -484,7 +504,8 @@ class Chef
     # Used to deprecate the fact that defaults set instance variables when retrieved
     # @api private
     class DeprecatedStickyDefault
-      instance_methods.each { |method_name| undef_method(method_name) }
+      KEEPERS = %w{__send__ object_id}
+      instance_methods.each { |method_name| undef_method(method_name) unless KEEPERS.include?(method_name.to_s) }
 
       def initialize(property, resource, level=nil)
         @property = property
