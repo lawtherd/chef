@@ -346,6 +346,14 @@ describe "Chef::Resource.property" do
         resource.instance_eval { @x = nil }
         expect(resource.x).to be_nil
       end
+      it "when x's default has been retrieved, its value can be accessed via the instance variable and emits a deprecation warning on use" do
+        expect(resource.instance_eval { defined?(@x) }).to be_falsey
+        resource.x
+        expect(resource.instance_eval { defined?(@x) }).to be_truthy
+        expect { resource.instance_eval { @x } == 10 }.to raise_error Chef::Exceptions::DeprecatedFeatureError
+        Chef::Config[:treat_deprecation_warnings_as_errors] = false
+        expect(resource.instance_eval { @x } == 10 ).to be_truthy
+      end
 
       context "With a subclass" do
         let(:subresource_class) do
@@ -377,6 +385,14 @@ describe "Chef::Resource.property" do
     with_property ':x, default: nil' do
       it "when x is not set, it returns nil" do
         expect(resource.x).to be_nil
+      end
+      it "when x's default has been retrieved, its value can be accessed via the instance variable and emits a deprecation warning on use" do
+        expect(resource.instance_eval { defined?(@x) }).to be_falsey
+        resource.x
+        expect(resource.instance_eval { defined?(@x) }).to be_truthy
+        expect { resource.instance_eval { @x }.nil? }.to raise_error Chef::Exceptions::DeprecatedFeatureError
+        Chef::Config[:treat_deprecation_warnings_as_errors] = false
+        expect(resource.instance_eval { @x }.nil? ).to be_truthy
       end
     end
 

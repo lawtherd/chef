@@ -1,5 +1,6 @@
 require 'chef/exceptions'
 require 'chef/delayed_evaluator'
+require 'chef/mixin/deprecation'
 
 class Chef
   #
@@ -17,6 +18,8 @@ class Chef
   # @see Chef::DelayedEvaluator
   #
   class Property
+    include Chef::Mixin::Deprecation
+
     #
     # Create a new property.
     #
@@ -221,10 +224,11 @@ class Chef
           value = exec_in_resource(resource, value)
           value = coerce(resource, value)
         end
-        value
+        return value
 
       else
         raise Chef::Exceptions::ValidationFailed, "#{name} is required" if required?
+        set_deprecated_default_value(resource)
         default(resource)
       end
     end
@@ -420,9 +424,23 @@ class Chef
       end
     end
 
+    def set_deprecated_default_value(resource)
+      if instance_variable_name
+        if !resource.send(:instance_variable_defined?, instance_variable_name)
+          value = DeprecatedStickyDefault.new(self, resource)
+          resource.send(:instance_variable_set, instance_variable_name, value)
+        end
+      end
+    end
+
     def value_is_set?(resource)
       if instance_variable_name
-        resource.send(:instance_variable_defined?, instance_variable_name)
+        resource.send(:instance_variable_defined?, instance_variable_name) &&
+          begin
+            !get_value(resource).is_deprecated_sticky_default?
+          rescue NoMethodError
+            true
+          end
       else
         true
       end
@@ -457,6 +475,38 @@ class Chef
         else
           super
         end
+      end
+
+      def set_deprecated_default_value(*args)
+      end
+    end
+
+    # Used to deprecate the fact that defaults set instance variables when retrieved
+    # @api private
+    class DeprecatedStickyDefault
+      instance_methods.each { |method_name| undef_method(method_name) }
+
+      def initialize(property, resource, level=nil)
+        @property = property
+        @resource = resource
+        @level ||= :warn
+      end
+
+      def method_missing(method_name, *args, &block)
+        log_deprecation_msg
+        @property.default(@resource).send(method_name, *args, &block)
+      end
+
+      def is_deprecated_sticky_default?
+        true
+      end
+
+      private
+
+      def log_deprecation_msg
+        Chef::Log.deprecation("Accessing the default value of #{@ivar_name} via its instance variable @#{@ivar_name} is deprecated. Support will be removed in a future release.")
+        Chef::Log.deprecation("Please update your resource to use #{@ivar_name} in place of @#{@ivar_name}. Accessed from:")
+        caller[1..4].each {|l| Chef::Log.deprecation(l)}
       end
     end
   end

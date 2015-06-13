@@ -940,7 +940,7 @@ describe Chef::Resource do
       error_inspector = Chef::Formatters::ErrorInspectors::ResourceFailureInspector.new(resource, action, err)
       description = Chef::Formatters::ErrorDescription.new("test")
       error_inspector.add_explanation(description)
-      Chef::Log.info("descrtiption: #{description.inspect},error_inspector: #{error_inspector}")
+      Chef::Log.info("description: #{description.inspect},error_inspector: #{error_inspector}")
       description.sections[1]["Compiled Resource:"]
     end
 
