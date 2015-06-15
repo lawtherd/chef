@@ -309,12 +309,17 @@ class Chef
       # with the proper exit status code and everything gets raised
       # as a RunFailedWrappingError
       if run_error || converge_error || audit_error
-        error = if run_error == converge_error
-          Chef::Exceptions::RunFailedWrappingError.new(converge_error, audit_error)
-        else
-          Chef::Exceptions::RunFailedWrappingError.new(run_error, converge_error, audit_error)
-        end
-        error.fill_backtrace
+        error = if Chef::Config[:audit_mode] == :disabled
+                  run_error || converge_error
+                else
+                  e = if run_error == converge_error
+                    Chef::Exceptions::RunFailedWrappingError.new(converge_error, audit_error)
+                  else
+                    Chef::Exceptions::RunFailedWrappingError.new(run_error, converge_error, audit_error)
+                  end
+                  e.fill_backtrace
+                end
+
         Chef::Application.debug_stacktrace(error)
         raise error
       end
